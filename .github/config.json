@@ -1,0 +1,28 @@
+{
+  "organization": {
+    "name": "Edgelligence",
+    "github": "https://github.com/Edgelligence"
+  },
+  "socialMedia": {
+    "github": {
+      "url": "https://github.com/Edgelligence",
+      "icon": "github",
+      "label": "GitHub"
+    },
+    "twitter": {
+      "url": "https://twitter.com/edgelligence",
+      "icon": "twitter",
+      "label": "Twitter"
+    },
+    "linkedin": {
+      "url": "https://linkedin.com/company/edgelligence",
+      "icon": "linkedin",
+      "label": "LinkedIn"
+    },
+    "instagram": {
+      "url": "https://instagram.com/edgelligence",
+      "icon": "instagram",
+      "label": "Instagram"
+    }
+  }
+}
