@@ -14,9 +14,6 @@
       "database_id": "placeholder-update-after-creation",
       "migrations_dir": "migrations"
     }
-  ],
-  // Environment variables
-  "vars": {
-    "IP_SALT": "change-this-in-production"
-  }
+  ]
+  // Note: Set IP_SALT secret via: wrangler secret put IP_SALT
 }

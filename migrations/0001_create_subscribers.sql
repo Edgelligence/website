@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS subscribers (
     unsubscribed_at TEXT
 );
 
--- Index for email lookups (case-insensitive)
-CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email);
+-- Note: The UNIQUE constraint on email automatically creates an index in SQLite
 
 -- Index for analytics queries
 CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON subscribers(created_at);

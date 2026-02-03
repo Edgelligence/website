@@ -5,9 +5,12 @@
  * Uses Cloudflare D1 for persistent storage.
  */
 
-// Email validation regex (RFC 5322 simplified)
+// Email validation regex - simplified pattern that accepts most valid emails
+// while being permissive enough for edge cases. Server-side validation is a
+// secondary check; the HTML5 email input provides primary validation.
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
+const MAX_SOURCE_LENGTH = 50;
 
 /**
  * Hash the client IP for privacy-preserving analytics
@@ -95,7 +98,7 @@ export async function onRequestPost(context) {
   }
   
   const email = validation.email;
-  const source = typeof body.source === 'string' ? body.source.slice(0, 50) : 'landing_page';
+  const source = typeof body.source === 'string' ? body.source.slice(0, MAX_SOURCE_LENGTH) : 'landing_page';
   
   // Get client metadata for analytics (privacy-preserving)
   const clientIP = request.headers.get('CF-Connecting-IP');
