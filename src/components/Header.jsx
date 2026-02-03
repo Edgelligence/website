@@ -108,9 +108,9 @@ function Header() {
 
         {/* Right side: Social icons + Theme toggle */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Social Media Icons */}
+          {/* Social Media Icons - hidden on small screens to prevent overflow */}
           {!loading && (
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="hidden sm:flex items-center gap-1 md:gap-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
@@ -130,8 +130,8 @@ function Header() {
             </div>
           )}
 
-          {/* Divider */}
-          <div className="h-5 w-px bg-gray-300 dark:bg-gray-700 mx-1 md:mx-2" />
+          {/* Divider - hidden on small screens */}
+          <div className="hidden sm:block h-5 w-px bg-gray-300 dark:bg-gray-700 mx-1 md:mx-2" />
 
           {/* Theme Toggle */}
           <button
