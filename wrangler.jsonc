@@ -3,5 +3,17 @@
   "compatibility_date": "2026-02-03",
   "assets": {
     "directory": "./dist"
-  }
+  },
+  // D1 Database for subscriber persistence
+  // Create with: wrangler d1 create edgelligence-subscribers
+  // Apply migrations with: wrangler d1 migrations apply edgelligence-subscribers
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "edgelligence-subscribers",
+      "database_id": "placeholder-update-after-creation",
+      "migrations_dir": "migrations"
+    }
+  ]
+  // Note: Set IP_SALT secret via: wrangler secret put IP_SALT
 }

@@ -14,36 +14,37 @@ function Newsletter() {
     setStatus('submitting');
     
     try {
-      const existingData = localStorage.getItem('edgelligence_subscriptions');
-      const subscriptions = existingData ? JSON.parse(existingData) : [];
-      
-      if (subscriptions.some(sub => sub.email === email)) {
-        setStatus('error');
-        setMessage('Already subscribed');
-        setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
-        return;
-      }
-      
-      subscriptions.push({
-        email,
-        timestamp: new Date().toISOString(),
-        source: 'landing_page'
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          source: 'landing_page',
+        }),
       });
       
-      localStorage.setItem('edgelligence_subscriptions', JSON.stringify(subscriptions));
+      const data = await response.json();
       
-      setStatus('success');
-      setMessage('You\'re on the list');
-      
-      setTimeout(() => {
-        setStatus('idle');
-        setMessage('');
-        setEmail('');
-      }, 3000);
+      if (response.ok && data.success) {
+        setStatus('success');
+        setMessage(data.message || 'You\'re on the list');
+        
+        setTimeout(() => {
+          setStatus('idle');
+          setMessage('');
+          setEmail('');
+        }, 3000);
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Something went wrong');
+        setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
+      }
       
     } catch {
       setStatus('error');
-      setMessage('Something went wrong');
+      setMessage('Unable to connect. Please try again.');
       setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
     }
   };
