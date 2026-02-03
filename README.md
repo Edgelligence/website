@@ -1,6 +1,19 @@
-# Edgelligence - Coming Soon
+# Edgelligence
 
-A modern, responsive "Coming Soon" landing page built with React, Vite, and Tailwind CSS. Features a dark-themed UI, newsletter signup, and mobile-optimized design.
+**Unveiling the Intelligent Edge: AI for and on the Network Periphery**
+
+A modern, responsive research group website built with React, Vite, and Tailwind CSS. Features a dark-themed UI, newsletter signup, and mobile-optimized design.
+
+## 🌟 About Edgelligence
+
+At the forefront of edge intelligence, our research group relentlessly pursues breakthroughs. By fostering a culture of diverse perspectives, we cultivate an environment that unlocks the power of AI at the network edge, pioneering the future of intelligent, distributed computing.
+
+### Research Areas
+
+- **AI for the Edge**: We develop AI techniques to optimize edge computing performance, enabling faster processing and smarter decision-making at the network edge.
+- **AI at the Edge**: We unlock the potential of distributed and federated learning, allowing AI models to run efficiently on edge devices, unlocking new possibilities for secure and localized intelligence.
+
+Shape the future of next-level computing, one intelligent edge at a time: join our team!
 
 ![Desktop View](https://github.com/user-attachments/assets/9c5c8055-3ca4-4716-bfd9-f2791bb9f9ab)
 
@@ -72,7 +85,7 @@ npm run preview
 
 ### Update Content
 
-- **Hero Section**: Edit `src/components/Hero.jsx` to change the heading and subtext
+- **Hero Section**: Edit `src/components/Hero.jsx` to update the research group's mission and research areas
 - **Newsletter**: Modify `src/components/Newsletter.jsx` to integrate with your email service
 - **Footer**: Update `src/components/Footer.jsx` to add actual social media links
 
