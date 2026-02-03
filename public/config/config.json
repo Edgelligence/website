@@ -23,6 +23,21 @@
       "url": "https://instagram.com/edgelligence",
       "icon": "instagram",
       "label": "Instagram"
+    },
+    "facebook": {
+      "url": "https://facebook.com/edgelligence",
+      "icon": "facebook",
+      "label": "Facebook"
+    },
+    "youtube": {
+      "url": "https://youtube.com/@edgelligence",
+      "icon": "youtube",
+      "label": "YouTube"
+    },
+    "email": {
+      "url": "mailto:contact@edgelligence.com",
+      "icon": "email",
+      "label": "Email"
     }
   }
 }
