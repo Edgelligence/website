@@ -81,6 +81,17 @@ Build output will be in the `dist/` directory.
 npm run preview
 ```
 
+## 🚀 Deployment
+
+This site is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. 
+
+The deployment process:
+1. GitHub Actions workflow builds the Vite application
+2. The built files from the `dist/` directory are deployed to GitHub Pages
+3. The site becomes available at https://edgelligence.github.io/
+
+To manually trigger a deployment, go to the Actions tab in the repository and run the "Deploy to GitHub Pages" workflow.
+
 ## 🎨 Customization
 
 ### Update Content
