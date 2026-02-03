@@ -1,16 +1,100 @@
-# React + Vite
+# Edgelligence - Coming Soon
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive "Coming Soon" landing page built with React, Vite, and Tailwind CSS. Features a dark-themed UI, newsletter signup, and mobile-optimized design.
 
-Currently, two official plugins are available:
+![Desktop View](https://github.com/user-attachments/assets/9c5c8055-3ca4-4716-bfd9-f2791bb9f9ab)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## React Compiler
+- **Modern React Stack**: Built with React 19.2.0 and Vite 7.3.1
+- **Tailwind CSS v4**: Latest version with Vite plugin integration
+- **Dark Theme**: Elegant gradient background with gray-900 to gray-800
+- **Responsive Design**: Mobile-first approach, fully responsive across all devices
+- **Newsletter Signup**: Functional email input with success state feedback
+- **Social Media Icons**: Footer with placeholder icons for Twitter/X, LinkedIn, GitHub, and Instagram
+- **Clean Architecture**: Organized component structure in separate files
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Project Structure
 
-## Expanding the ESLint configuration
+```
+src/
+├── App.jsx              # Main app component
+├── components/
+│   ├── Hero.jsx         # Hero section with heading and subtext
+│   ├── Newsletter.jsx   # Email signup form with state management
+│   └── Footer.jsx       # Footer with social media icons
+├── index.css            # Tailwind CSS imports
+└── main.jsx             # React entry point
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher recommended)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Edgelligence/edgelligence.github.io.git
+cd edgelligence.github.io
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5173/`
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+Build output will be in the `dist/` directory.
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## 🎨 Customization
+
+### Update Content
+
+- **Hero Section**: Edit `src/components/Hero.jsx` to change the heading and subtext
+- **Newsletter**: Modify `src/components/Newsletter.jsx` to integrate with your email service
+- **Footer**: Update `src/components/Footer.jsx` to add actual social media links
+
+### Styling
+
+The project uses Tailwind CSS v4. You can customize the design by modifying the Tailwind classes in the components.
+
+## 📱 Responsive Design
+
+The landing page is fully responsive and optimized for:
+- Desktop (1920px and above)
+- Tablet (768px - 1919px)
+- Mobile (320px - 767px)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+---
+
+Made with ❤️ by Edgelligence
