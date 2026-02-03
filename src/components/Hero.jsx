@@ -24,7 +24,7 @@ function Hero() {
           <h3 className="text-xl font-bold text-blue-400 mb-3">AI at the Edge</h3>
           <p className="text-gray-300 leading-relaxed">
             We unlock the potential of distributed and federated learning, allowing AI models 
-            to run efficiently on edge devices, unlocking new possibilities for secure and 
+            to run efficiently on edge devices, enabling new possibilities for secure and 
             localized intelligence.
           </p>
         </div>
