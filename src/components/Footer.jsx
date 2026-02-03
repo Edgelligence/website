@@ -7,25 +7,25 @@ function Footer() {
   ];
 
   return (
-    <footer className="w-full px-4 py-8 mt-auto">
+    <footer className="w-full px-4 py-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex gap-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-4">
             {socialLinks.map((social) => (
               <a
                 key={social.name}
                 href={social.url}
                 aria-label={social.name}
-                className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 
+                className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 
                            flex items-center justify-center text-gray-300 hover:text-white 
                            hover:bg-gray-700 hover:border-gray-600 transition-all duration-200 
-                           font-semibold text-sm"
+                           font-semibold text-xs"
               >
                 {social.icon}
               </a>
             ))}
           </div>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 text-xs">
             © 2026 Edgelligence. All rights reserved.
           </p>
         </div>
