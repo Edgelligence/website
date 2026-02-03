@@ -2,44 +2,100 @@
 
 ## Overview
 
-The "Notify Me" feature allows users to subscribe to updates from Edgelligence. This implementation is model-agnostic and infrastructure-neutral, using browser localStorage for data persistence.
+The "Notify Me" feature allows users to subscribe to updates from Edgelligence. This production-ready implementation uses Cloudflare's edge infrastructure for reliable, scalable, and globally distributed subscription handling.
 
 ## Architecture
+
+### Technology Stack
+
+- **Frontend**: React component making API calls
+- **Backend**: Cloudflare Pages Functions (Workers)
+- **Database**: Cloudflare D1 (SQLite at the edge)
+- **Deployment**: Cloudflare Pages with automatic functions routing
 
 ### Data Flow
 
 1. **User Input**: User enters email address in the Newsletter component
-2. **Validation**: Browser validates email format (HTML5 validation)
-3. **Submission**: Form submission triggers handleSubmit function
-4. **Persistence**: Email is stored in browser's localStorage
-5. **Feedback**: User receives immediate visual feedback (success/failure)
-6. **State Reset**: After 3 seconds, form resets to allow new submissions
+2. **Validation**: Client-side HTML5 validation + server-side validation
+3. **Submission**: POST request to `/api/subscribe` endpoint
+4. **Processing**: Cloudflare Worker validates and stores the subscription
+5. **Persistence**: Email is stored in Cloudflare D1 database
+6. **Feedback**: User receives immediate visual feedback (success/failure)
+7. **State Reset**: After 3 seconds, form resets to allow new submissions
 
-### Storage Mechanism
+### API Endpoints
 
-The feature uses **localStorage** for client-side persistence:
+#### POST /api/subscribe
 
-```javascript
-// Store subscription
-localStorage.setItem('edgelligence_subscriptions', JSON.stringify(subscriptions));
+Subscribe an email address to notifications.
 
-// Retrieve subscriptions
-const subscriptions = JSON.parse(localStorage.getItem('edgelligence_subscriptions') || '[]');
-```
-
-### Data Structure
-
-Subscriptions are stored as an array of objects:
-
+**Request:**
 ```json
-[
-  {
-    "email": "user@example.com",
-    "timestamp": "2026-02-03T12:45:00.000Z",
-    "source": "landing_page"
-  }
-]
+{
+  "email": "user@example.com",
+  "source": "landing_page"
+}
 ```
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "You're on the list!"
+}
+```
+
+**Already Subscribed Response (409):**
+```json
+{
+  "success": false,
+  "error": "Already subscribed"
+}
+```
+
+**Validation Error Response (400):**
+```json
+{
+  "success": false,
+  "error": "Invalid email format"
+}
+```
+
+#### GET /api/health
+
+Health check endpoint for monitoring.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-02-03T12:45:00.000Z",
+  "services": {
+    "database": "ok"
+  }
+}
+```
+
+## Database Schema
+
+### subscribers table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER | Primary key (auto-increment) |
+| email | TEXT | Email address (unique, case-insensitive) |
+| source | TEXT | Where the subscription came from |
+| ip_hash | TEXT | Privacy-preserving IP hash for analytics |
+| user_agent | TEXT | Browser user agent (truncated) |
+| created_at | TEXT | ISO 8601 timestamp |
+| verified_at | TEXT | Email verification timestamp (future use) |
+| unsubscribed_at | TEXT | Unsubscription timestamp |
+
+### Indexes
+
+- `idx_subscribers_email` - Fast email lookups
+- `idx_subscribers_created_at` - Analytics queries
+- `idx_subscribers_source` - Source filtering
 
 ## Implementation Details
 
@@ -49,92 +105,123 @@ The Newsletter component handles the entire subscription flow:
 
 - **State Management**: Uses React useState for email input and submission status
 - **Form Validation**: Leverages HTML5 email validation (required + type="email")
-- **Error Handling**: Gracefully handles localStorage errors (quota exceeded, disabled)
+- **API Integration**: Fetches `/api/subscribe` endpoint with proper error handling
+- **Error Handling**: Gracefully handles network errors and API failures
 - **User Feedback**: Visual feedback through button state changes
 - **Accessibility**: Proper ARIA labels and semantic HTML
 
-### Features
+### Worker: functions/api/subscribe.js
 
-1. **Persistence**: Subscriptions survive page reloads and browser restarts
-2. **Duplicate Prevention**: Checks for existing email before adding
-3. **Error Handling**: Catches and reports localStorage errors
-4. **Success Feedback**: Clear visual confirmation when subscription succeeds
-5. **Failure Feedback**: Error messages when subscription fails
-6. **Privacy**: Data stays in user's browser, not sent to external services
+The subscription worker handles:
+
+- **Input Validation**: Server-side email format validation
+- **Duplicate Detection**: Prevents double subscriptions
+- **Re-subscription**: Allows previously unsubscribed users to re-subscribe
+- **Privacy**: Hashes IP addresses for analytics without storing raw IPs
+- **Error Handling**: Graceful handling of database errors and race conditions
+
+## Features
+
+1. **Global Distribution**: D1 replicates data across Cloudflare's edge network
+2. **Low Latency**: Workers run close to users for fast response times
+3. **Persistence**: Subscriptions survive indefinitely in D1 database
+4. **Duplicate Prevention**: Database-level uniqueness constraint
+5. **Re-subscription Support**: Users can re-subscribe after unsubscribing
+6. **Error Handling**: Graceful degradation and clear error messages
+7. **Privacy**: IP hashing for analytics without raw IP storage
+8. **Scalability**: Handles launch-day traffic with Cloudflare's infrastructure
 
 ## Privacy Considerations
 
-- **Local Storage Only**: No data is transmitted to external servers
-- **User Control**: Users can clear subscriptions by clearing browser data
-- **No Third-Party Services**: No external SDKs or vendor-specific services
-- **Transparent**: Data storage mechanism is clearly documented
+- **Minimal Data**: Only stores email, source, and analytics metadata
+- **IP Hashing**: Client IPs are hashed before storage
+- **No Third-Party Services**: All data stays within Cloudflare infrastructure
+- **User Control**: Unsubscription support (can be extended with API endpoint)
+- **GDPR Ready**: Architecture supports data export and deletion
 
-## Future Integration Points
+## Deployment
 
-While the current implementation uses localStorage, the architecture allows for future backend integration:
+### Initial Setup
 
-1. **API Integration**: Add POST request to backend API after localStorage save
-2. **Email Service**: Connect to email service provider (e.g., SendGrid, Mailchimp API)
-3. **Database**: Store subscriptions in backend database
-4. **Export Function**: Add admin function to export localStorage data
+1. Create the D1 database:
+   ```bash
+   wrangler d1 create edgelligence-subscribers
+   ```
 
-The localStorage approach ensures the feature works immediately without requiring backend infrastructure.
+2. Update `wrangler.jsonc` with the database ID from step 1
 
-## Browser Compatibility
+3. Apply migrations:
+   ```bash
+   wrangler d1 migrations apply edgelligence-subscribers
+   ```
 
-localStorage is supported in all modern browsers:
-- Chrome 4+
-- Firefox 3.5+
-- Safari 4+
-- Edge (all versions)
-- iOS Safari 3.2+
-- Android Browser 2.1+
+4. Set production IP salt:
+   ```bash
+   wrangler secret put IP_SALT
+   ```
 
-## Testing
+5. Deploy:
+   ```bash
+   npm run build
+   wrangler pages deploy dist
+   ```
 
-To test the feature:
+### Environment Variables
 
-1. Open the website in a browser
-2. Enter an email address
-3. Click "Notify Me"
-4. Verify success message appears
-5. Reload the page
-6. Open Developer Tools > Application > Local Storage
-7. Verify email is stored in `edgelligence_subscriptions`
+| Variable | Description |
+|----------|-------------|
+| IP_SALT | Salt for IP address hashing (set via `wrangler secret`) |
 
-## Maintenance
+## Monitoring
 
-### Viewing Stored Subscriptions
+### Health Checks
 
-Administrators can view subscriptions by running this in the browser console:
+Monitor the `/api/health` endpoint to ensure the service is operational:
 
-```javascript
-const subscriptions = JSON.parse(localStorage.getItem('edgelligence_subscriptions') || '[]');
-console.table(subscriptions);
+```bash
+curl https://your-domain.com/api/health
 ```
 
-### Clearing Subscriptions
+### Database Queries
 
-To clear all subscriptions (testing/debugging):
+Access the D1 database via Wrangler:
 
-```javascript
-localStorage.removeItem('edgelligence_subscriptions');
+```bash
+# Count subscribers
+wrangler d1 execute edgelligence-subscribers --command "SELECT COUNT(*) FROM subscribers"
+
+# List recent subscribers
+wrangler d1 execute edgelligence-subscribers --command "SELECT email, created_at FROM subscribers ORDER BY created_at DESC LIMIT 10"
+
+# Export all subscribers (CSV format)
+wrangler d1 execute edgelligence-subscribers --command "SELECT email, source, created_at FROM subscribers WHERE unsubscribed_at IS NULL"
 ```
 
 ## Security Considerations
 
-- **No PII Transmission**: Email addresses are not transmitted to third parties
+- **Input Validation**: Server-side validation prevents malformed data
+- **SQL Injection**: Parameterized queries prevent injection attacks
+- **Rate Limiting**: Cloudflare provides built-in DDoS protection
+- **HTTPS Only**: All traffic encrypted in transit
 - **XSS Protection**: React automatically escapes user input
-- **Storage Limits**: localStorage is limited to ~5-10MB per domain
-- **HTTPS Only**: Website should be served over HTTPS to protect stored data
+- **Unique Constraints**: Database-level duplicate prevention
 
-## Migration Path
+## Migration from localStorage
 
-If you decide to add backend integration later:
+The previous localStorage implementation was client-side only. The new system:
 
-1. Keep localStorage as primary storage
-2. Add optional API call as secondary persistence
-3. Implement sync mechanism to upload localStorage data
-4. Gradually migrate users to backend-only storage
+1. **Replaces** localStorage with server-side persistence
+2. **Maintains** the same UI behavior and user experience
+3. **Adds** proper persistence that works across devices
+4. **Enables** actual notification delivery in the future
 
-This ensures zero downtime and graceful degradation.
+Note: Existing localStorage subscriptions are not automatically migrated. If needed, a migration script can be added to submit existing localStorage entries to the API.
+
+## Future Enhancements
+
+1. **Email Verification**: Add double opt-in with verification emails
+2. **Unsubscribe API**: Add `/api/unsubscribe` endpoint
+3. **Admin Dashboard**: View and manage subscribers
+4. **Notification Delivery**: Integrate with email service (SendGrid, SES)
+5. **Analytics**: Track subscription sources and engagement
+6. **Webhooks**: Notify external systems of new subscriptions

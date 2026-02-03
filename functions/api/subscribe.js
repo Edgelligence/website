@@ -1,0 +1,176 @@
+/**
+ * Subscribe API - Cloudflare Worker Function
+ * 
+ * Handles email subscription requests for the "Notify Me" feature.
+ * Uses Cloudflare D1 for persistent storage.
+ */
+
+// Email validation regex (RFC 5322 simplified)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
+
+/**
+ * Hash the client IP for privacy-preserving analytics
+ * Uses a simple hash since we don't need cryptographic strength
+ */
+async function hashIP(ip, salt) {
+  if (!ip) return null;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip + (salt || ''));
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Validate email address
+ */
+function validateEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, error: 'Email is required' };
+  }
+  
+  const trimmedEmail = email.trim().toLowerCase();
+  
+  if (trimmedEmail.length === 0) {
+    return { valid: false, error: 'Email is required' };
+  }
+  
+  if (trimmedEmail.length > MAX_EMAIL_LENGTH) {
+    return { valid: false, error: 'Email is too long' };
+  }
+  
+  if (!EMAIL_REGEX.test(trimmedEmail)) {
+    return { valid: false, error: 'Invalid email format' };
+  }
+  
+  return { valid: true, email: trimmedEmail };
+}
+
+/**
+ * Create JSON response with CORS headers
+ */
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+/**
+ * Handle POST /api/subscribe
+ */
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  
+  // Check if D1 database is configured
+  if (!env.DB) {
+    console.error('D1 database not configured');
+    return jsonResponse({ 
+      success: false, 
+      error: 'Service temporarily unavailable' 
+    }, 503);
+  }
+  
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ 
+      success: false, 
+      error: 'Invalid request body' 
+    }, 400);
+  }
+  
+  // Validate email
+  const validation = validateEmail(body.email);
+  if (!validation.valid) {
+    return jsonResponse({ 
+      success: false, 
+      error: validation.error 
+    }, 400);
+  }
+  
+  const email = validation.email;
+  const source = typeof body.source === 'string' ? body.source.slice(0, 50) : 'landing_page';
+  
+  // Get client metadata for analytics (privacy-preserving)
+  const clientIP = request.headers.get('CF-Connecting-IP');
+  const userAgent = request.headers.get('User-Agent')?.slice(0, 500) || null;
+  const ipHash = await hashIP(clientIP, env.IP_SALT);
+  
+  try {
+    // Check if email already exists
+    const existing = await env.DB.prepare(
+      'SELECT id, unsubscribed_at FROM subscribers WHERE email = ?'
+    ).bind(email).first();
+    
+    if (existing) {
+      // If previously unsubscribed, allow re-subscription
+      if (existing.unsubscribed_at) {
+        await env.DB.prepare(
+          'UPDATE subscribers SET unsubscribed_at = NULL, source = ?, ip_hash = ?, user_agent = ? WHERE id = ?'
+        ).bind(source, ipHash, userAgent, existing.id).run();
+        
+        return jsonResponse({ 
+          success: true, 
+          message: 'Welcome back! You\'ve been re-subscribed.' 
+        });
+      }
+      
+      return jsonResponse({ 
+        success: false, 
+        error: 'Already subscribed' 
+      }, 409);
+    }
+    
+    // Insert new subscriber
+    await env.DB.prepare(
+      'INSERT INTO subscribers (email, source, ip_hash, user_agent) VALUES (?, ?, ?, ?)'
+    ).bind(email, source, ipHash, userAgent).run();
+    
+    return jsonResponse({ 
+      success: true, 
+      message: 'You\'re on the list!' 
+    }, 201);
+    
+  } catch (error) {
+    // Handle unique constraint violation (race condition)
+    if (error.message?.includes('UNIQUE constraint failed')) {
+      return jsonResponse({ 
+        success: false, 
+        error: 'Already subscribed' 
+      }, 409);
+    }
+    
+    console.error('Database error:', error);
+    return jsonResponse({ 
+      success: false, 
+      error: 'Unable to process subscription. Please try again.' 
+    }, 500);
+  }
+}
+
+/**
+ * Handle unsupported methods
+ */
+export async function onRequest(context) {
+  const { request } = context;
+  
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Allow': 'POST, OPTIONS',
+      },
+    });
+  }
+  
+  return jsonResponse({ 
+    success: false, 
+    error: 'Method not allowed' 
+  }, 405);
+}
