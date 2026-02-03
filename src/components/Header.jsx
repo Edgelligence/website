@@ -107,10 +107,10 @@ function Header() {
         </div>
 
         {/* Right side: Social icons + Theme toggle */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Social Media Icons - hidden on small screens to prevent overflow */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Social Media Icons - visible on all screen sizes */}
           {!loading && (
-            <div className="hidden sm:flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
@@ -118,7 +118,7 @@ function Header() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Visit our ${social.name} page`}
-                  className="p-2 rounded-lg text-gray-600 dark:text-gray-400 
+                  className="p-1.5 sm:p-2 rounded-lg text-gray-600 dark:text-gray-400 
                              hover:text-gray-900 dark:hover:text-white
                              hover:bg-gray-100 dark:hover:bg-gray-800 
                              transition-all duration-200
@@ -130,14 +130,14 @@ function Header() {
             </div>
           )}
 
-          {/* Divider - hidden on small screens */}
-          <div className="hidden sm:block h-5 w-px bg-gray-300 dark:bg-gray-700 mx-1 md:mx-2" />
+          {/* Divider */}
+          <div className="h-4 sm:h-5 w-px bg-gray-300 dark:bg-gray-700 mx-0.5 sm:mx-1 md:mx-2" />
 
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 
+            className="p-1.5 sm:p-2 rounded-lg text-gray-600 dark:text-gray-400 
                        hover:text-gray-900 dark:hover:text-white
                        hover:bg-gray-100 dark:hover:bg-gray-800 
                        transition-all duration-200
