@@ -7,9 +7,9 @@ function Footer() {
   ];
 
   return (
-    <footer className="w-full px-4 py-4">
+    <footer className="w-full px-4 py-6">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4">
           <div className="flex gap-4">
             {socialLinks.map((social) => (
               <a

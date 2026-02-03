@@ -18,8 +18,8 @@ function Newsletter() {
   };
 
   return (
-    <section className="w-full max-w-md mx-auto px-4 py-4">
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+    <section className="w-full max-w-md mx-auto px-4 py-6">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <input
           type="email"
           value={email}
