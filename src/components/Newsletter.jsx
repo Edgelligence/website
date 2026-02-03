@@ -34,7 +34,7 @@ function Newsletter() {
       
       // Add new subscription
       const newSubscription = {
-        email: email,
+        email,
         timestamp: new Date().toISOString(),
         source: 'landing_page'
       };

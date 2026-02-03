@@ -34,11 +34,13 @@ The following platforms are configured:
 
 ### Usage
 
-The website dynamically loads social media links from this configuration file at build time. To update social media links:
+The website dynamically loads social media links from this configuration file at runtime. To update social media links:
 
 1. Edit the `url` field for the respective platform in `config.json`
 2. Rebuild the website with `npm run build`
 3. Deploy the updated build
+
+The configuration is fetched when users visit the site, so changes take effect immediately after deployment.
 
 ### Adding New Platforms
 
