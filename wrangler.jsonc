@@ -6,7 +6,7 @@
   },
   // D1 Database for subscriber persistence
   // Create with: wrangler d1 create edgelligence-subscribers
-  // Apply migrations with: wrangler d1 migrations apply edgelligence-subscribers
+  // Deploy with migrations: npm run deploy
   "d1_databases": [
     {
       "binding": "DB",
