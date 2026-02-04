@@ -7,9 +7,11 @@
     "dev": "vite",
     "dev:full": "wrangler pages dev -- npx vite",
     "db:migrate": "wrangler d1 migrations apply edgelligence-subscribers --local",
+    "db:migrate:remote": "wrangler d1 migrations apply edgelligence-subscribers --remote",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "wrangler pages dev dist"
+    "preview": "wrangler pages dev dist",
+    "deploy": "npm run db:migrate:remote && npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
     "react": "^19.2.0",
