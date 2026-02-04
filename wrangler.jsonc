@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "edgelligence-subscribers",
-      "database_id": "placeholder-update-after-creation",
+      "database_id": "8db56eb6-5760-4a39-ae9c-a79512a20b5f",
       "migrations_dir": "migrations"
     }
   ]
