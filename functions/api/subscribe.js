@@ -70,7 +70,13 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   
   // Check if D1 database is configured
-  const hasDatabase = env.DB && typeof env.DB.prepare === 'function';
+  if (!env.DB) {
+    console.error('D1 database not configured');
+    return jsonResponse({ 
+      success: false, 
+      error: 'Service temporarily unavailable' 
+    }, 503);
+  }
   
   let body;
   try {
@@ -98,16 +104,6 @@ export async function onRequestPost(context) {
   const clientIP = request.headers.get('CF-Connecting-IP');
   const userAgent = request.headers.get('User-Agent')?.slice(0, 500) || null;
   const ipHash = await hashIP(clientIP, env.IP_SALT);
-  
-  // Fallback when D1 database is not configured
-  // This allows the feature to work in development or before database setup
-  if (!hasDatabase) {
-    console.warn('Subscribe request handled without database (data not persisted):', { source });
-    return jsonResponse({ 
-      success: true, 
-      message: 'Thanks! We\'ll notify you when we launch.' 
-    }, 201);
-  }
   
   try {
     // Check if email already exists
