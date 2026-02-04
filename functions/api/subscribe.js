@@ -102,7 +102,7 @@ export async function onRequestPost(context) {
   // Fallback when D1 database is not configured
   // This allows the feature to work in development or before database setup
   if (!hasDatabase) {
-    console.log('Subscribe request (no DB configured):', { email, source, ipHash });
+    console.warn('Subscribe request handled without database (data not persisted):', { source });
     return jsonResponse({ 
       success: true, 
       message: 'Thanks! We\'ll notify you when we launch.' 
