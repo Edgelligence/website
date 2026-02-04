@@ -29,8 +29,23 @@ cd website
 
 # Install dependencies
 npm install
+```
+
+### Development
+
+For full-stack development (with API functionality):
+```bash
+# First time setup: apply database migrations
+npm run db:migrate
 
 # Start the development server
+npm run dev:full
+```
+
+This runs the full Cloudflare Pages stack locally with a D1 database. Access the site at the URL shown (typically `http://localhost:8788`).
+
+For frontend-only development (API calls will fail):
+```bash
 npm run dev
 ```
 

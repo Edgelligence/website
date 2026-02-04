@@ -141,6 +141,31 @@ The subscription worker handles:
 
 ## Deployment
 
+### Local Development
+
+For local development with full API functionality:
+
+```bash
+# First time setup: apply database migrations
+npm run db:migrate
+
+# Start the development server
+npm run dev:full
+```
+
+This runs Wrangler Pages with a local D1 database, proxying the Vite frontend. Access the site at the URL shown (typically `http://localhost:8788`).
+
+For frontend-only development (API calls will fail):
+```bash
+npm run dev
+```
+
+To preview the full production build locally:
+```bash
+npm run build
+npm run preview
+```
+
 ### Initial Setup
 
 1. Create the D1 database:
