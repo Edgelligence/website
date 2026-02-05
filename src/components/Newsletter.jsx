@@ -25,7 +25,21 @@ function Newsletter() {
         }),
       });
       
-      const data = await response.json();
+      // Safely parse response - handle non-JSON responses gracefully
+      const contentType = response.headers.get('content-type') || '';
+      let data;
+      
+      if (contentType.includes('application/json')) {
+        const responseText = await response.text();
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          data = { success: false, error: 'Invalid server response' };
+        }
+      } else {
+        // Non-JSON response indicates server misconfiguration or outage
+        data = { success: false, error: 'Service unavailable' };
+      }
       
       if (response.ok && data.success) {
         setStatus('success');
