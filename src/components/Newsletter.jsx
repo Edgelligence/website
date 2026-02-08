@@ -86,6 +86,8 @@ function Newsletter() {
     const processPending = async () => {
       const pending = getPendingSubscriptions();
       
+      // Process sequentially to avoid overwhelming the API
+      // and to ensure proper error handling for each subscription
       for (const subscription of pending) {
         try {
           const { ok, data } = await submitToApi(subscription.email, subscription.source);
