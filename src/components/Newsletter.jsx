@@ -1,9 +1,40 @@
-import { useState, useId } from 'react';
+import { useState, useEffect, useId } from 'react';
 
 const RESET_DELAY = 3000;
+const STORAGE_KEY = 'edgelligence_subscribers';
 const ERR_SERVICE_UNAVAILABLE = 'Service unavailable';
 const ERR_INVALID_RESPONSE = 'Invalid server response';
 const ERR_ALREADY_SUBSCRIBED = 'Already subscribed';
+
+function getPendingEmails() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function savePendingEmail(email) {
+  try {
+    const pending = getPendingEmails();
+    const trimmed = email.trim().toLowerCase();
+    if (!pending.includes(trimmed)) {
+      pending.push(trimmed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
+    }
+  } catch { /* localStorage unavailable */ }
+}
+
+function removePendingEmail(email) {
+  try {
+    const pending = getPendingEmails().filter(e => e !== email);
+    if (pending.length === 0) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
+    }
+  } catch { /* localStorage unavailable */ }
+}
 
 async function submitToApi(email, source) {
   const response = await fetch('/api/subscribe', {
@@ -29,11 +60,25 @@ async function submitToApi(email, source) {
   return { ok: response.ok, data };
 }
 
+async function syncPendingEmails() {
+  const pending = getPendingEmails();
+  for (const email of pending) {
+    try {
+      const { ok, data } = await submitToApi(email, 'landing_page');
+      if ((ok && data.success) || data.error === ERR_ALREADY_SUBSCRIBED) {
+        removePendingEmail(email);
+      }
+    } catch { /* API still unavailable, keep in queue */ }
+  }
+}
+
 function Newsletter() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
   const emailId = useId();
+
+  useEffect(() => { syncPendingEmails(); }, []);
 
   const showSuccess = (msg) => {
     setStatus('success');
@@ -58,14 +103,20 @@ function Newsletter() {
       const { ok, data } = await submitToApi(email, 'landing_page');
       
       if (ok && data.success) {
+        removePendingEmail(email.trim().toLowerCase());
         showSuccess(data.message || 'You\'re on the list!');
       } else if (data.error === ERR_ALREADY_SUBSCRIBED) {
+        removePendingEmail(email.trim().toLowerCase());
         showSuccess('You\'re already on the list!');
+      } else if (data.error === ERR_SERVICE_UNAVAILABLE || data.error === ERR_INVALID_RESPONSE) {
+        savePendingEmail(email);
+        showSuccess('You\'re on the list! We\'ll confirm when service is restored.');
       } else {
         showError(data.error || 'Subscription failed. Please try again later.');
       }
     } catch {
-      showError('Unable to connect. Please try again.');
+      savePendingEmail(email);
+      showSuccess('You\'re on the list! We\'ll confirm when service is restored.');
     }
   };
 
