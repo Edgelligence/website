@@ -1,6 +1,10 @@
 import { useState, useId, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'edgelligence_subscribers';
+const RESET_DELAY = 3000;
+const ERR_SERVICE_UNAVAILABLE = 'Service unavailable';
+const ERR_INVALID_RESPONSE = 'Invalid server response';
+const ERR_ALREADY_SUBSCRIBED = 'Already subscribed';
 
 function getStoredEmails() {
   try {
@@ -42,10 +46,10 @@ async function submitToApi(email, source) {
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch {
-      data = { success: false, error: 'Invalid server response' };
+      data = { success: false, error: ERR_INVALID_RESPONSE };
     }
   } else {
-    data = { success: false, error: 'Service unavailable' };
+    data = { success: false, error: ERR_SERVICE_UNAVAILABLE };
   }
 
   return { ok: response.ok, data };
@@ -57,6 +61,18 @@ function Newsletter() {
   const [message, setMessage] = useState('');
   const emailId = useId();
 
+  const showSuccess = (msg) => {
+    setStatus('success');
+    setMessage(msg);
+    setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, RESET_DELAY);
+  };
+
+  const showError = (msg) => {
+    setStatus('error');
+    setMessage(msg);
+    setTimeout(() => { setStatus('idle'); setMessage(''); }, RESET_DELAY);
+  };
+
   const syncPending = useCallback(async () => {
     const stored = getStoredEmails();
     if (stored.length === 0) return;
@@ -65,7 +81,7 @@ function Newsletter() {
     for (const e of stored) {
       try {
         const { ok, data } = await submitToApi(e, 'landing_page');
-        if ((ok && data.success) || data.error === 'Already subscribed') {
+        if ((ok && data.success) || data.error === ERR_ALREADY_SUBSCRIBED) {
           synced.push(e);
         }
       } catch {
@@ -93,9 +109,7 @@ function Newsletter() {
     if (!email) return;
 
     if (isEmailStored(email)) {
-      setStatus('success');
-      setMessage('You\'re already on the list!');
-      setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+      showSuccess('You\'re already on the list!');
       return;
     }
 
@@ -106,31 +120,21 @@ function Newsletter() {
       
       if (ok && data.success) {
         storeEmail(email);
-        setStatus('success');
-        setMessage(data.message || 'You\'re on the list!');
-        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
-      } else if (data.error === 'Already subscribed') {
+        showSuccess(data.message || 'You\'re on the list!');
+      } else if (data.error === ERR_ALREADY_SUBSCRIBED) {
         storeEmail(email);
-        setStatus('success');
-        setMessage('You\'re already on the list!');
-        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
-      } else if (data.error === 'Service unavailable' || data.error === 'Invalid server response') {
+        showSuccess('You\'re already on the list!');
+      } else if (data.error === ERR_SERVICE_UNAVAILABLE || data.error === ERR_INVALID_RESPONSE) {
         // API not properly configured — save locally as fallback
         storeEmail(email);
-        setStatus('success');
-        setMessage('You\'re on the list!');
-        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+        showSuccess('You\'re on the list!');
       } else {
-        setStatus('error');
-        setMessage(data.error || 'Something went wrong');
-        setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
+        showError(data.error || 'Something went wrong');
       }
     } catch {
       // API unavailable — save locally as fallback
       storeEmail(email);
-      setStatus('success');
-      setMessage('You\'re on the list!');
-      setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+      showSuccess('You\'re on the list!');
     }
   };
 
