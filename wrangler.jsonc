@@ -4,13 +4,19 @@
   "assets": {
     "directory": "./dist"
   },
-  // D1 database for subscriber storage. Run `wrangler d1 create edgelligence-subscribers`
-  // and replace the database_id below. See docs/NOTIFY_ME.md for full setup instructions.
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "edgelligence-subscribers",
-      "database_id": "5b4a227d-bc52-470e-871c-95ce89c5afe6"
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
     }
-  ]
+  }
 }
