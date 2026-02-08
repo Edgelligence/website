@@ -231,17 +231,6 @@ wrangler d1 execute edgelligence-subscribers --command "SELECT email, source, cr
 - **XSS Protection**: React automatically escapes user input
 - **Unique Constraints**: Database-level duplicate prevention
 
-## Migration from localStorage
-
-The previous localStorage implementation was client-side only. The new system:
-
-1. **Replaces** localStorage with server-side persistence
-2. **Maintains** the same UI behavior and user experience
-3. **Adds** proper persistence that works across devices
-4. **Enables** actual notification delivery in the future
-
-Note: Existing localStorage subscriptions are not automatically migrated. If needed, a migration script can be added to submit existing localStorage entries to the API.
-
 ## Future Enhancements
 
 1. **Email Verification**: Add double opt-in with verification emails

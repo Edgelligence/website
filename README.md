@@ -63,19 +63,33 @@ Build output will be in the `dist/` directory.
 
 ```
 ├── public/
+│   ├── _routes.json          # Cloudflare Pages routing rules
 │   ├── config/
-│   │   └── config.json      # Social media and organization configuration
-│   └── favicon.png          # Site favicon
+│   │   └── config.json       # Social media and organization configuration
+│   └── favicon.png           # Site favicon
 ├── src/
 │   ├── components/
-│   │   ├── Footer.jsx       # Footer with social media icons
-│   │   ├── Hero.jsx         # Hero section with heading and subtext
-│   │   └── Newsletter.jsx   # Email signup form
-│   ├── App.jsx              # Main app component
-│   ├── index.css            # Tailwind CSS imports
-│   └── main.jsx             # React entry point
+│   │   ├── Footer.jsx        # Footer with social media icons
+│   │   ├── Header.jsx        # Header with theme toggle
+│   │   ├── Hero.jsx          # Hero section with heading and subtext
+│   │   └── Newsletter.jsx    # Email signup form
+│   ├── contexts/
+│   │   ├── ThemeContext.jsx   # Theme provider component
+│   │   └── ThemeContextBase.js # Theme context definition
+│   ├── hooks/
+│   │   └── useTheme.js       # Custom hook for theme access
+│   ├── App.jsx               # Main app component
+│   ├── index.css             # Tailwind CSS imports and global styles
+│   └── main.jsx              # React entry point
+├── functions/
+│   └── api/
+│       ├── health.js         # Health check endpoint
+│       └── subscribe.js      # Email subscription endpoint
+├── migrations/
+│   └── 0001_create_subscribers.sql  # D1 database schema
 ├── docs/
-│   └── NOTIFY_ME.md         # Newsletter feature documentation
+│   └── NOTIFY_ME.md          # Newsletter feature documentation
+├── wrangler.jsonc             # Cloudflare Pages configuration
 └── README.md
 ```
 
