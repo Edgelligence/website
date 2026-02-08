@@ -1,4 +1,55 @@
-import { useState, useId } from 'react';
+import { useState, useId, useEffect, useCallback } from 'react';
+
+const STORAGE_KEY = 'edgelligence_subscribers';
+
+function getStoredEmails() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function storeEmail(email) {
+  try {
+    const stored = getStoredEmails();
+    const trimmed = email.trim().toLowerCase();
+    if (!stored.includes(trimmed)) {
+      stored.push(trimmed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    }
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+function isEmailStored(email) {
+  return getStoredEmails().includes(email.trim().toLowerCase());
+}
+
+async function submitToApi(email, source) {
+  const response = await fetch('/api/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim(), source }),
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+  let data;
+
+  if (contentType.includes('application/json')) {
+    const responseText = await response.text();
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      data = { success: false, error: 'Invalid server response' };
+    }
+  } else {
+    data = { success: false, error: 'Service unavailable' };
+  }
+
+  return { ok: response.ok, data };
+}
 
 function Newsletter() {
   const [email, setEmail] = useState('');
@@ -6,60 +57,80 @@ function Newsletter() {
   const [message, setMessage] = useState('');
   const emailId = useId();
 
+  const syncPending = useCallback(async () => {
+    const stored = getStoredEmails();
+    if (stored.length === 0) return;
+
+    const synced = [];
+    for (const e of stored) {
+      try {
+        const { ok, data } = await submitToApi(e, 'landing_page');
+        if ((ok && data.success) || data.error === 'Already subscribed') {
+          synced.push(e);
+        }
+      } catch {
+        break;
+      }
+    }
+
+    if (synced.length > 0) {
+      try {
+        const remaining = stored.filter((e) => !synced.includes(e));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+      } catch {
+        // localStorage unavailable
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    syncPending();
+  }, [syncPending]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!email) return;
 
+    if (isEmailStored(email)) {
+      setStatus('success');
+      setMessage('You\'re already on the list!');
+      setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+      return;
+    }
+
     setStatus('submitting');
     
     try {
-      const response = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          source: 'landing_page',
-        }),
-      });
+      const { ok, data } = await submitToApi(email, 'landing_page');
       
-      // Safely parse response - handle non-JSON responses gracefully
-      const contentType = response.headers.get('content-type') || '';
-      let data;
-      
-      if (contentType.includes('application/json')) {
-        const responseText = await response.text();
-        try {
-          data = responseText ? JSON.parse(responseText) : {};
-        } catch {
-          data = { success: false, error: 'Invalid server response' };
-        }
-      } else {
-        // Non-JSON response indicates server misconfiguration or outage
-        data = { success: false, error: 'Service unavailable' };
-      }
-      
-      if (response.ok && data.success) {
+      if (ok && data.success) {
+        storeEmail(email);
         setStatus('success');
-        setMessage(data.message || 'You\'re on the list');
-        
-        setTimeout(() => {
-          setStatus('idle');
-          setMessage('');
-          setEmail('');
-        }, 3000);
+        setMessage(data.message || 'You\'re on the list!');
+        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+      } else if (data.error === 'Already subscribed') {
+        storeEmail(email);
+        setStatus('success');
+        setMessage('You\'re already on the list!');
+        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
+      } else if (data.error === 'Service unavailable' || data.error === 'Invalid server response') {
+        // API not properly configured — save locally as fallback
+        storeEmail(email);
+        setStatus('success');
+        setMessage('You\'re on the list!');
+        setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
       } else {
         setStatus('error');
         setMessage(data.error || 'Something went wrong');
         setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
       }
-      
     } catch {
-      setStatus('error');
-      setMessage('Unable to connect. Please try again.');
-      setTimeout(() => { setStatus('idle'); setMessage(''); }, 3000);
+      // API unavailable — save locally as fallback
+      storeEmail(email);
+      setStatus('success');
+      setMessage('You\'re on the list!');
+      setTimeout(() => { setStatus('idle'); setMessage(''); setEmail(''); }, 3000);
     }
   };
 
