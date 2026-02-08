@@ -3,5 +3,15 @@
   "compatibility_date": "2026-02-03",
   "assets": {
     "directory": "./dist"
-  }
+  },
+  // D1 database for subscriber storage. Run `wrangler d1 create edgelligence-subscribers`
+  // and replace the database_id below. See docs/NOTIFY_ME.md for full setup instructions.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "edgelligence-subscribers",
+      "database_id": "REPLACE_WITH_YOUR_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ]
 }
