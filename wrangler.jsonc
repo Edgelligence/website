@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "edgelligence-subscribers",
-      "database_id": "REPLACE_WITH_YOUR_DATABASE_ID",
+      "database_id": "5b4a227d-bc52-470e-871c-95ce89c5afe6",
       "migrations_dir": "migrations"
     }
   ]
