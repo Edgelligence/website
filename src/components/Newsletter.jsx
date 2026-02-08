@@ -1,9 +1,43 @@
-import { useState, useId } from 'react';
+import { useState, useEffect, useId } from 'react';
 
 const RESET_DELAY = 3000;
 const ERR_SERVICE_UNAVAILABLE = 'Service unavailable';
 const ERR_INVALID_RESPONSE = 'Invalid server response';
 const ERR_ALREADY_SUBSCRIBED = 'Already subscribed';
+const STORAGE_KEY = 'edgelligence_pending_subscriptions';
+
+// LocalStorage queue management
+function getPendingSubscriptions() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addPendingSubscription(email, source) {
+  try {
+    const pending = getPendingSubscriptions();
+    // Avoid duplicates in queue
+    if (!pending.some(sub => sub.email === email)) {
+      pending.push({ email, source, timestamp: Date.now() });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
+    }
+  } catch (error) {
+    console.error('Failed to store subscription locally:', error);
+  }
+}
+
+function removePendingSubscription(email) {
+  try {
+    const pending = getPendingSubscriptions();
+    const filtered = pending.filter(sub => sub.email !== email);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  } catch (error) {
+    console.error('Failed to update local storage:', error);
+  }
+}
 
 async function submitToApi(email, source) {
   const response = await fetch('/api/subscribe', {
@@ -47,6 +81,29 @@ function Newsletter() {
     setTimeout(() => { setStatus('idle'); setMessage(''); }, RESET_DELAY);
   };
 
+  // Process pending subscriptions on mount
+  useEffect(() => {
+    const processPending = async () => {
+      const pending = getPendingSubscriptions();
+      
+      for (const subscription of pending) {
+        try {
+          const { ok, data } = await submitToApi(subscription.email, subscription.source);
+          
+          // Remove from queue on success or if already subscribed
+          if ((ok && data.success) || data.error === ERR_ALREADY_SUBSCRIBED) {
+            removePendingSubscription(subscription.email);
+          }
+        } catch {
+          // Keep in queue for next retry
+          console.log('Will retry subscription for:', subscription.email);
+        }
+      }
+    };
+
+    processPending();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -58,14 +115,21 @@ function Newsletter() {
       const { ok, data } = await submitToApi(email, 'landing_page');
       
       if (ok && data.success) {
+        // Remove from queue if it was pending
+        removePendingSubscription(email);
         showSuccess(data.message || 'You\'re on the list!');
       } else if (data.error === ERR_ALREADY_SUBSCRIBED) {
+        // Remove from queue if it was pending
+        removePendingSubscription(email);
         showSuccess('You\'re already on the list!');
       } else {
+        // API error but service is available - show error
         showError(data.error || 'Subscription failed. Please try again later.');
       }
     } catch {
-      showError('Unable to connect. Please try again.');
+      // Network error - add to queue and show user they're queued
+      addPendingSubscription(email, 'landing_page');
+      showSuccess('Saved! We\'ll notify you when back online.');
     }
   };
 
