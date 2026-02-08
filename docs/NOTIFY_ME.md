@@ -231,17 +231,6 @@ wrangler d1 execute edgelligence-subscribers --command "SELECT email, source, cr
 - **XSS Protection**: React automatically escapes user input
 - **Unique Constraints**: Database-level duplicate prevention
 
-## localStorage Fallback
-
-The Newsletter component uses a hybrid approach combining server-side persistence with localStorage as a fallback:
-
-1. **Primary**: Subscriptions are sent to the `/api/subscribe` endpoint for server-side persistence in D1
-2. **Fallback**: When the API is unavailable or returns a non-JSON response, the email is stored in localStorage (key: `edgelligence_subscribers`)
-3. **Sync on load**: On component mount, any pending localStorage entries are synced to the API, and successfully synced entries are removed from localStorage
-4. **Duplicate detection**: localStorage is also checked before submission to avoid unnecessary API calls for already-stored emails
-
-This ensures a seamless user experience even when the backend is not yet configured or temporarily unavailable.
-
 ## Future Enhancements
 
 1. **Email Verification**: Add double opt-in with verification emails
