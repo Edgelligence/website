@@ -106,49 +106,38 @@ export async function onRequestPost(context) {
   const ipHash = await hashIP(clientIP, env.IP_SALT);
   
   try {
-    // Check if email already exists
-    const existing = await env.DB.prepare(
-      'SELECT id, unsubscribed_at FROM subscribers WHERE email = ?'
-    ).bind(email).first();
+    // Atomic upsert using D1 batch (single round trip, runs as a transaction).
+    // 1. INSERT OR IGNORE: succeeds for new emails, silently ignored for existing
+    // 2. UPDATE: re-subscribes only if previously unsubscribed
+    const [insertResult, updateResult] = await env.DB.batch([
+      env.DB.prepare(
+        'INSERT OR IGNORE INTO subscribers (email, source, ip_hash, user_agent) VALUES (?, ?, ?, ?)'
+      ).bind(email, source, ipHash, userAgent),
+      env.DB.prepare(
+        'UPDATE subscribers SET unsubscribed_at = NULL, source = ?, ip_hash = ?, user_agent = ? WHERE email = ? AND unsubscribed_at IS NOT NULL'
+      ).bind(source, ipHash, userAgent, email),
+    ]);
     
-    if (existing) {
-      // If previously unsubscribed, allow re-subscription
-      if (existing.unsubscribed_at) {
-        await env.DB.prepare(
-          'UPDATE subscribers SET unsubscribed_at = NULL, source = ?, ip_hash = ?, user_agent = ? WHERE id = ?'
-        ).bind(source, ipHash, userAgent, existing.id).run();
-        
-        return jsonResponse({ 
-          success: true, 
-          message: 'Welcome back! You\'ve been re-subscribed.' 
-        });
-      }
-      
+    if (insertResult.meta.changes === 1) {
       return jsonResponse({ 
-        success: false, 
-        error: 'Already subscribed' 
-      }, 409);
+        success: true, 
+        message: 'You\'re on the list!' 
+      }, 201);
     }
     
-    // Insert new subscriber
-    await env.DB.prepare(
-      'INSERT INTO subscribers (email, source, ip_hash, user_agent) VALUES (?, ?, ?, ?)'
-    ).bind(email, source, ipHash, userAgent).run();
+    if (updateResult.meta.changes === 1) {
+      return jsonResponse({ 
+        success: true, 
+        message: 'Welcome back! You\'ve been re-subscribed.' 
+      });
+    }
     
     return jsonResponse({ 
-      success: true, 
-      message: 'You\'re on the list!' 
-    }, 201);
+      success: false, 
+      error: 'Already subscribed' 
+    }, 409);
     
   } catch (error) {
-    // Handle unique constraint violation (race condition)
-    if (error.message?.includes('UNIQUE constraint failed')) {
-      return jsonResponse({ 
-        success: false, 
-        error: 'Already subscribed' 
-      }, 409);
-    }
-    
     console.error('Database error:', error);
     return jsonResponse({ 
       success: false, 

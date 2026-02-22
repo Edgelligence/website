@@ -106,7 +106,7 @@ The Newsletter component handles the entire subscription flow:
 - **State Management**: Uses React useState for email input and submission status
 - **Form Validation**: Leverages HTML5 email validation (required + type="email")
 - **API Integration**: Fetches `/api/subscribe` endpoint with proper error handling
-- **Error Handling**: Gracefully handles network errors and API failures
+- **Error Handling**: Surfaces network and API errors directly to the user
 - **User Feedback**: Visual feedback through button state changes
 - **Accessibility**: Proper ARIA labels and semantic HTML
 
@@ -114,11 +114,12 @@ The Newsletter component handles the entire subscription flow:
 
 The subscription worker handles:
 
+- **Atomic Upsert**: Uses D1 `batch()` to run `INSERT OR IGNORE` + conditional `UPDATE` as a single atomic transaction in one round trip
 - **Input Validation**: Server-side email format validation
 - **Duplicate Detection**: Prevents double subscriptions
 - **Re-subscription**: Allows previously unsubscribed users to re-subscribe
 - **Privacy**: Hashes IP addresses for analytics without storing raw IPs
-- **Error Handling**: Graceful handling of database errors and race conditions
+- **Error Handling**: Graceful handling of database errors
 
 ## Features
 
@@ -127,7 +128,7 @@ The subscription worker handles:
 3. **Persistence**: Subscriptions survive indefinitely in D1 database
 4. **Duplicate Prevention**: Database-level uniqueness constraint
 5. **Re-subscription Support**: Users can re-subscribe after unsubscribing
-6. **Error Handling**: Graceful degradation and clear error messages
+6. **Error Handling**: Clear error messages for network and API failures
 7. **Privacy**: IP hashing for analytics without raw IP storage
 8. **Scalability**: Handles launch-day traffic with Cloudflare's infrastructure
 
