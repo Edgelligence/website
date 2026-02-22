@@ -60,7 +60,7 @@ async function submitToApi(email, source) {
     data = { success: false, error: ERR_SERVICE_UNAVAILABLE };
   }
 
-  return { ok: response.ok, data };
+  return { ok: response.ok, status: response.status, data };
 }
 
 function Newsletter() {
@@ -114,7 +114,7 @@ function Newsletter() {
     setStatus('submitting');
     
     try {
-      const { ok, data } = await submitToApi(email, 'landing_page');
+      const { ok, status, data } = await submitToApi(email, 'landing_page');
       
       if (ok && data.success) {
         // Remove from queue if it was pending
@@ -124,8 +124,12 @@ function Newsletter() {
         // Remove from queue if it was pending
         removePendingSubscription(email);
         showSuccess('You\'re already on the list!');
+      } else if (status >= 500 || data.error === ERR_SERVICE_UNAVAILABLE || data.error === ERR_INVALID_RESPONSE) {
+        // Service-level error - persist for retry when service recovers
+        addPendingSubscription(email, 'landing_page');
+        showSuccess('Saved! We\'ll notify you when back online.');
       } else {
-        // API error but service is available - show error
+        // Client error (validation, etc.) - show error
         showError(data.error || 'Subscription failed. Please try again later.');
       }
     } catch {

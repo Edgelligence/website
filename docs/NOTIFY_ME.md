@@ -20,8 +20,9 @@ The "Notify Me" feature allows users to subscribe to updates from Edgelligence. 
 3. **Submission**: POST request to `/api/subscribe` endpoint
 4. **Processing**: Cloudflare Worker validates and stores the subscription
 5. **Persistence**: Email is stored in Cloudflare D1 database
-6. **Feedback**: User receives immediate visual feedback (success/failure)
-7. **State Reset**: After 3 seconds, form resets to allow new submissions
+6. **Fallback**: If the API is unreachable or returns a server error, the email is persisted in localStorage and automatically retried on the next page load
+7. **Feedback**: User receives immediate visual feedback (success/failure)
+8. **State Reset**: After 3 seconds, form resets to allow new submissions
 
 ### API Endpoints
 
@@ -106,7 +107,8 @@ The Newsletter component handles the entire subscription flow:
 - **State Management**: Uses React useState for email input and submission status
 - **Form Validation**: Leverages HTML5 email validation (required + type="email")
 - **API Integration**: Fetches `/api/subscribe` endpoint with proper error handling
-- **Error Handling**: Gracefully handles network errors and API failures
+- **Offline Persistence**: Stores subscriptions in localStorage when the API is unreachable or returns server errors (5xx, non-JSON responses), and retries them automatically on the next page load
+- **Error Classification**: Distinguishes between transient errors (service unavailable, server errors) that trigger localStorage persistence and client errors (validation failures) that show error messages
 - **User Feedback**: Visual feedback through button state changes
 - **Accessibility**: Proper ARIA labels and semantic HTML
 
@@ -125,11 +127,12 @@ The subscription worker handles:
 1. **Global Distribution**: D1 replicates data across Cloudflare's edge network
 2. **Low Latency**: Workers run close to users for fast response times
 3. **Persistence**: Subscriptions survive indefinitely in D1 database
-4. **Duplicate Prevention**: Database-level uniqueness constraint
-5. **Re-subscription Support**: Users can re-subscribe after unsubscribing
-6. **Error Handling**: Graceful degradation and clear error messages
-7. **Privacy**: IP hashing for analytics without raw IP storage
-8. **Scalability**: Handles launch-day traffic with Cloudflare's infrastructure
+4. **Offline Resilience**: localStorage queue persists subscriptions during network failures and server errors, with automatic retry on next page load
+5. **Duplicate Prevention**: Database-level uniqueness constraint
+6. **Re-subscription Support**: Users can re-subscribe after unsubscribing
+7. **Error Handling**: Graceful degradation with transient vs. client error classification
+8. **Privacy**: IP hashing for analytics without raw IP storage
+9. **Scalability**: Handles launch-day traffic with Cloudflare's infrastructure
 
 ## Privacy Considerations
 
