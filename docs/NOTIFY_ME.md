@@ -114,11 +114,12 @@ The Newsletter component handles the entire subscription flow:
 
 The subscription worker handles:
 
+- **Atomic Upsert**: Uses D1 `batch()` to run `INSERT OR IGNORE` + conditional `UPDATE` as a single atomic transaction in one round trip
 - **Input Validation**: Server-side email format validation
 - **Duplicate Detection**: Prevents double subscriptions
 - **Re-subscription**: Allows previously unsubscribed users to re-subscribe
 - **Privacy**: Hashes IP addresses for analytics without storing raw IPs
-- **Error Handling**: Graceful handling of database errors and race conditions
+- **Error Handling**: Graceful handling of database errors
 
 ## Features
 
