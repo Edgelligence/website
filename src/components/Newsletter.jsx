@@ -127,7 +127,7 @@ function Newsletter() {
       } else if (status >= 500 || data.error === ERR_SERVICE_UNAVAILABLE || data.error === ERR_INVALID_RESPONSE) {
         // Service-level error - persist for retry when service recovers
         addPendingSubscription(email, 'landing_page');
-        showSuccess('Saved! We\'ll notify you when back online.');
+        showSuccess('Saved! We\'ll retry your subscription automatically.');
       } else {
         // Client error (validation, etc.) - show error
         showError(data.error || 'Subscription failed. Please try again later.');
