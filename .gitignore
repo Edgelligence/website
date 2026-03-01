@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Wrangler/Cloudflare
-.wrangler
+# Vercel
+.vercel
 
 # Editor directories and files
 .vscode/*

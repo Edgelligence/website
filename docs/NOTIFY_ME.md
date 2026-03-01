@@ -2,24 +2,24 @@
 
 ## Overview
 
-The "Notify Me" feature allows users to subscribe to updates from Edgelligence. This production-ready implementation uses Cloudflare's edge infrastructure for reliable, scalable, and globally distributed subscription handling.
+The "Notify Me" feature allows users to subscribe to updates from Edgelligence. This implementation uses Vercel's serverless infrastructure for reliable, scalable subscription handling.
 
 ## Architecture
 
 ### Technology Stack
 
 - **Frontend**: React component making API calls
-- **Backend**: Cloudflare Pages Functions (Workers)
-- **Database**: Cloudflare D1 (SQLite at the edge)
-- **Deployment**: Cloudflare Pages with automatic functions routing
+- **Backend**: Vercel Serverless Functions (Node.js)
+- **Database**: Neon Postgres (serverless PostgreSQL)
+- **Deployment**: Vercel with automatic serverless functions routing
 
 ### Data Flow
 
 1. **User Input**: User enters email address in the Newsletter component
 2. **Validation**: Client-side HTML5 validation + server-side validation
 3. **Submission**: POST request to `/api/subscribe` endpoint
-4. **Processing**: Cloudflare Worker validates and stores the subscription
-5. **Persistence**: Email is stored in Cloudflare D1 database
+4. **Processing**: Vercel Serverless Function validates and stores the subscription
+5. **Persistence**: Email is stored in the configured database
 6. **Feedback**: User receives immediate visual feedback (success/failure)
 7. **State Reset**: After 3 seconds, form resets to allow new submissions
 
@@ -71,31 +71,52 @@ Health check endpoint for monitoring.
   "status": "ok",
   "timestamp": "2026-02-03T12:45:00.000Z",
   "services": {
+    "api": "ok",
     "database": "ok"
   }
 }
 ```
 
-## Database Schema
+## Database Integration
 
-### subscribers table
+### Current Implementation
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER | Primary key (auto-increment) |
-| email | TEXT | Email address (unique, case-insensitive) |
-| source | TEXT | Where the subscription came from |
-| ip_hash | TEXT | Privacy-preserving IP hash for analytics |
-| user_agent | TEXT | Browser user agent (truncated) |
-| created_at | TEXT | ISO 8601 timestamp |
-| verified_at | TEXT | Email verification timestamp (future use) |
-| unsubscribed_at | TEXT | Unsubscription timestamp |
+The application uses **Neon Postgres** (serverless PostgreSQL) for production-ready data persistence. Neon is the recommended database solution for Vercel deployments.
 
-### Indexes
+### Database Schema
 
-- `idx_subscribers_email` - Fast email lookups
-- `idx_subscribers_created_at` - Analytics queries
-- `idx_subscribers_source` - Source filtering
+```sql
+CREATE TABLE IF NOT EXISTS subscribers (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'landing_page',
+  ip_hash TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  unsubscribed_at TIMESTAMP
+);
+```
+
+### Setup Instructions
+
+1. **Create a Neon Database**
+   - Visit [neon.tech](https://neon.tech) and sign up (free tier available)
+   - Create a new project
+   - Copy the connection string (starts with `postgresql://`)
+
+2. **Initialize Database**
+   - Open the Neon SQL Editor
+   - Run the SQL script from `scripts/init-db.sql`
+   - This creates the `subscribers` table and indexes
+
+3. **Configure Environment Variables**
+   - In Vercel dashboard, go to Settings > Environment Variables
+   - Add `DATABASE_URL` with your Neon connection string
+   - Optionally add `IP_SALT` for IP hashing
+
+4. **Deploy**
+   - Push your code to trigger deployment
+   - Vercel will automatically use the environment variables
 
 ## Implementation Details
 
@@ -110,33 +131,34 @@ The Newsletter component handles the entire subscription flow:
 - **User Feedback**: Visual feedback through button state changes
 - **Accessibility**: Proper ARIA labels and semantic HTML
 
-### Worker: functions/api/subscribe.js
+### Serverless Function: api/subscribe.js
 
-The subscription worker handles:
+The subscription function handles:
 
-- **Atomic Upsert**: Uses D1 `batch()` to run `INSERT OR IGNORE` + conditional `UPDATE` as a single atomic transaction in one round trip
+- **Database Integration**: Uses Neon Postgres with parameterized queries
 - **Input Validation**: Server-side email format validation
-- **Duplicate Detection**: Prevents double subscriptions
+- **Duplicate Detection**: Database-level unique constraint on email
 - **Re-subscription**: Allows previously unsubscribed users to re-subscribe
 - **Privacy**: Hashes IP addresses for analytics without storing raw IPs
-- **Error Handling**: Graceful handling of database errors
+- **Error Handling**: Graceful handling of database and validation errors
+- **CORS Support**: Enables cross-origin requests
 
 ## Features
 
-1. **Global Distribution**: D1 replicates data across Cloudflare's edge network
-2. **Low Latency**: Workers run close to users for fast response times
-3. **Persistence**: Subscriptions survive indefinitely in D1 database
-4. **Duplicate Prevention**: Database-level uniqueness constraint
+1. **Global Distribution**: Vercel's edge network for fast response times
+2. **Low Latency**: Functions run close to users
+3. **Production-Ready Database**: Neon Postgres for reliable data persistence
+4. **Duplicate Prevention**: Database-level unique constraint
 5. **Re-subscription Support**: Users can re-subscribe after unsubscribing
 6. **Error Handling**: Clear error messages for network and API failures
 7. **Privacy**: IP hashing for analytics without raw IP storage
-8. **Scalability**: Handles launch-day traffic with Cloudflare's infrastructure
+8. **Scalability**: Serverless architecture handles traffic automatically
+9. **Connection Pooling**: Neon provides automatic connection management
 
 ## Privacy Considerations
 
 - **Minimal Data**: Only stores email, source, and analytics metadata
 - **IP Hashing**: Client IPs are hashed before storage
-- **No Third-Party Services**: All data stays within Cloudflare infrastructure
 - **User Control**: Unsubscription support (can be extended with API endpoint)
 - **GDPR Ready**: Architecture supports data export and deletion
 
@@ -144,59 +166,71 @@ The subscription worker handles:
 
 ### Local Development
 
-For local development with full API functionality:
+For local development with database access:
 
 ```bash
-# First time setup: apply database migrations
-npm run db:migrate
+# Install dependencies
+npm install
 
-# Start the development server
-npm run dev:full
+# Set up environment variables (create .env.local)
+# DATABASE_URL=your_neon_connection_string
+
+# Start the development server with Vercel CLI
+npm install -g vercel
+vercel dev
 ```
 
-This runs Wrangler Pages with a local D1 database, proxying the Vite frontend. Access the site at the URL shown (typically `http://localhost:8788`).
+The Vercel CLI runs at `http://localhost:3000/` with full API and database support.
 
 For frontend-only development (API calls will fail):
 ```bash
 npm run dev
 ```
 
-To preview the full production build locally:
+The Vite dev server runs at `http://localhost:5173/`.
+
+### Production Deployment
+
+#### Step 1: Set Up Neon Database
+
+1. Create account at [neon.tech](https://neon.tech)
+2. Create a new project
+3. Copy the connection string
+4. Run the initialization script (`scripts/init-db.sql`) in Neon SQL Editor
+
+#### Step 2: Deploy to Vercel
+
+1. Push your code to GitHub
+2. Import the project in [Vercel](https://vercel.com)
+3. Add environment variables:
+   - `DATABASE_URL`: Your Neon connection string
+   - `IP_SALT`: Random string for IP hashing (optional)
+4. Click "Deploy"
+
+Alternatively, use the Vercel CLI:
+
 ```bash
-npm run build
-npm run preview
+# Set environment variables
+vercel env add DATABASE_URL
+vercel env add IP_SALT
+
+# Deploy
+vercel --prod
 ```
-
-### Initial Setup
-
-1. Create the D1 database:
-   ```bash
-   wrangler d1 create edgelligence-subscribers
-   ```
-
-2. Update `wrangler.jsonc` with the database ID from step 1
-
-3. Apply migrations:
-   ```bash
-   wrangler d1 migrations apply edgelligence-subscribers
-   ```
-
-4. Set production IP salt:
-   ```bash
-   wrangler secret put IP_SALT
-   ```
-
-5. Deploy:
-   ```bash
-   npm run build
-   wrangler pages deploy dist
-   ```
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| IP_SALT | Salt for IP address hashing (set via `wrangler secret`) |
+Set these in the Vercel dashboard (Settings > Environment Variables):
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | Neon Postgres connection string | **Yes** |
+| `IP_SALT` | Salt for IP address hashing | Optional |
+
+**Note**: The `DATABASE_URL` should be in this format:
+```
+postgresql://[user]:[password]@[host]/[database]?sslmode=require
+```
 
 ## Monitoring
 
@@ -205,31 +239,47 @@ npm run preview
 Monitor the `/api/health` endpoint to ensure the service is operational:
 
 ```bash
-curl https://your-domain.com/api/health
+curl https://your-domain.vercel.app/api/health
 ```
 
-### Database Queries
+The health check verifies both API and database connectivity.
 
-Access the D1 database via Wrangler:
+### Database Management
 
-```bash
-# Count subscribers
-wrangler d1 execute edgelligence-subscribers --command "SELECT COUNT(*) FROM subscribers"
+Access your Neon database console to:
+- View subscriber data
+- Run analytics queries
+- Export subscriber lists
+- Monitor database performance
 
-# List recent subscribers
-wrangler d1 execute edgelligence-subscribers --command "SELECT email, created_at FROM subscribers ORDER BY created_at DESC LIMIT 10"
+Example queries:
 
-# Export all subscribers (CSV format)
-wrangler d1 execute edgelligence-subscribers --command "SELECT email, source, created_at FROM subscribers WHERE unsubscribed_at IS NULL"
+```sql
+-- Count total subscribers
+SELECT COUNT(*) FROM subscribers WHERE unsubscribed_at IS NULL;
+
+-- List recent subscribers
+SELECT email, source, created_at
+FROM subscribers
+WHERE unsubscribed_at IS NULL
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Get subscribers by source
+SELECT source, COUNT(*) as count
+FROM subscribers
+WHERE unsubscribed_at IS NULL
+GROUP BY source;
 ```
 
 ## Security Considerations
 
 - **Input Validation**: Server-side validation prevents malformed data
-- **SQL Injection**: Parameterized queries prevent injection attacks
-- **Rate Limiting**: Cloudflare provides built-in DDoS protection
+- **SQL Injection**: Parameterized queries prevent injection attacks (using Neon's tagged template literals)
+- **Rate Limiting**: Vercel provides built-in DDoS protection
 - **HTTPS Only**: All traffic encrypted in transit
 - **XSS Protection**: React automatically escapes user input
+- **Database Security**: Neon provides SSL connections and automatic backups
 - **Unique Constraints**: Database-level duplicate prevention
 
 ## Future Enhancements
@@ -237,6 +287,7 @@ wrangler d1 execute edgelligence-subscribers --command "SELECT email, source, cr
 1. **Email Verification**: Add double opt-in with verification emails
 2. **Unsubscribe API**: Add `/api/unsubscribe` endpoint
 3. **Admin Dashboard**: View and manage subscribers
-4. **Notification Delivery**: Integrate with email service (SendGrid, SES)
-5. **Analytics**: Track subscription sources and engagement
+4. **Notification Delivery**: Integrate with email service (SendGrid, Resend, etc.)
+5. **Analytics**: Enhanced tracking of subscription sources and engagement
 6. **Webhooks**: Notify external systems of new subscriptions
+7. **Backup Strategy**: Implement additional backup procedures beyond Neon's automatic backups

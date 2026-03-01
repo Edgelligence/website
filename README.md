@@ -2,7 +2,7 @@
 
 **Unveiling the Intelligent Edge: AI for and on the Network Periphery**
 
-A modern, responsive research group website built with React, Vite, and Tailwind CSS.
+A modern, responsive research group website built with React, Vite, and Tailwind CSS, deployed on Vercel.
 
 ## About Edgelligence
 
@@ -33,18 +33,7 @@ npm install
 
 ### Development
 
-For full-stack development (with API functionality):
-```bash
-# First time setup: apply database migrations
-npm run db:migrate
-
-# Start the development server
-npm run dev:full
-```
-
-This runs the full Cloudflare Pages stack locally with a D1 database. Access the site at the URL shown (typically `http://localhost:8788`).
-
-For frontend-only development (API calls will fail):
+Start the development server:
 ```bash
 npm run dev
 ```
@@ -63,7 +52,6 @@ Build output will be in the `dist/` directory.
 
 ```
 ├── public/
-│   ├── _routes.json          # Cloudflare Pages routing rules
 │   ├── config/
 │   │   └── config.json       # Social media and organization configuration
 │   └── favicon.png           # Site favicon
@@ -81,15 +69,12 @@ Build output will be in the `dist/` directory.
 │   ├── App.jsx               # Main app component
 │   ├── index.css             # Tailwind CSS imports and global styles
 │   └── main.jsx              # React entry point
-├── functions/
-│   └── api/
-│       ├── health.js         # Health check endpoint
-│       └── subscribe.js      # Email subscription endpoint
-├── migrations/
-│   └── 0001_create_subscribers.sql  # D1 database schema
+├── api/
+│   ├── health.js             # Health check endpoint
+│   └── subscribe.js          # Email subscription endpoint
 ├── docs/
 │   └── NOTIFY_ME.md          # Newsletter feature documentation
-├── wrangler.jsonc             # Cloudflare Pages configuration
+├── vercel.json               # Vercel deployment configuration
 └── README.md
 ```
 
@@ -106,6 +91,44 @@ Social media links are configured in `public/config/config.json`. The website lo
 - Facebook
 - YouTube
 - Email
+
+## Deployment
+
+This project is configured for deployment on Vercel.
+
+### Deploy to Vercel
+
+1. Push your code to GitHub
+2. Import the project in [Vercel](https://vercel.com)
+3. Vercel will automatically detect the Vite configuration
+4. Click "Deploy"
+
+Alternatively, use the Vercel CLI:
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### Database Setup
+
+This project uses Neon Postgres (serverless) for data persistence. Set up your database:
+
+1. Create a Neon database at [neon.tech](https://neon.tech) (free tier available)
+2. Copy your connection string
+3. In Vercel dashboard, add environment variable:
+   - `DATABASE_URL`: Your Neon Postgres connection string
+
+4. Initialize the database by running the SQL script in `scripts/init-db.sql` in your Neon console
+
+### Environment Variables
+
+Set these environment variables in the Vercel dashboard (Settings > Environment Variables):
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | Neon Postgres connection string | **Yes** |
+| `IP_SALT` | Salt for IP address hashing | Optional |
 
 ## License
 
