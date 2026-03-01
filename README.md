@@ -2,7 +2,7 @@
 
 **Unveiling the Intelligent Edge: AI for and on the Network Periphery**
 
-A modern, responsive research group website built with React, Vite, and Tailwind CSS.
+A modern, responsive research group website built with React, Vite, and Tailwind CSS, deployed on Vercel.
 
 ## About Edgelligence
 
@@ -33,18 +33,7 @@ npm install
 
 ### Development
 
-For full-stack development (with API functionality):
-```bash
-# First time setup: apply database migrations
-npm run db:migrate
-
-# Start the development server
-npm run dev:full
-```
-
-This runs the full Cloudflare Pages stack locally with a D1 database. Access the site at the URL shown (typically `http://localhost:8788`).
-
-For frontend-only development (API calls will fail):
+Start the development server:
 ```bash
 npm run dev
 ```
@@ -63,7 +52,6 @@ Build output will be in the `dist/` directory.
 
 ```
 ├── public/
-│   ├── _routes.json          # Cloudflare Pages routing rules
 │   ├── config/
 │   │   └── config.json       # Social media and organization configuration
 │   └── favicon.png           # Site favicon
@@ -81,15 +69,12 @@ Build output will be in the `dist/` directory.
 │   ├── App.jsx               # Main app component
 │   ├── index.css             # Tailwind CSS imports and global styles
 │   └── main.jsx              # React entry point
-├── functions/
-│   └── api/
-│       ├── health.js         # Health check endpoint
-│       └── subscribe.js      # Email subscription endpoint
-├── migrations/
-│   └── 0001_create_subscribers.sql  # D1 database schema
+├── api/
+│   ├── health.js             # Health check endpoint
+│   └── subscribe.js          # Email subscription endpoint
 ├── docs/
 │   └── NOTIFY_ME.md          # Newsletter feature documentation
-├── wrangler.jsonc             # Cloudflare Pages configuration
+├── vercel.json               # Vercel deployment configuration
 └── README.md
 ```
 
@@ -106,6 +91,35 @@ Social media links are configured in `public/config/config.json`. The website lo
 - Facebook
 - YouTube
 - Email
+
+## Deployment
+
+This project is configured for deployment on Vercel.
+
+### Deploy to Vercel
+
+1. Push your code to GitHub
+2. Import the project in [Vercel](https://vercel.com)
+3. Vercel will automatically detect the Vite configuration
+4. Click "Deploy"
+
+Alternatively, use the Vercel CLI:
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### Environment Variables
+
+For production, you may want to set the following environment variables in Vercel:
+
+- `IP_SALT`: Salt for IP address hashing (optional, for privacy-preserving analytics)
+
+Note: The current implementation uses in-memory storage for demo purposes. For production, consider integrating with:
+- Vercel Postgres
+- Vercel KV
+- Any other database service
 
 ## License
 
