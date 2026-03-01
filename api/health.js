@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   // Check database connectivity
   if (process.env.DATABASE_URL) {
     try {
-      const sql = neon(process.env.DATABASE_URL);
+      const sql = neon(process.env.edgelligence_DATABASE_URL);
       // Simple query to check connectivity
       await sql`SELECT 1 as test`;
       health.services.database = 'ok';
