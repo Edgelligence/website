@@ -10,7 +10,7 @@ The "Notify Me" feature allows users to subscribe to updates from Edgelligence. 
 
 - **Frontend**: React component making API calls
 - **Backend**: Vercel Serverless Functions (Node.js)
-- **Database**: In-memory storage (demo) - Ready for Vercel Postgres, KV, or other database integration
+- **Database**: Neon Postgres (serverless PostgreSQL)
 - **Deployment**: Vercel with automatic serverless functions routing
 
 ### Data Flow
@@ -71,7 +71,8 @@ Health check endpoint for monitoring.
   "status": "ok",
   "timestamp": "2026-02-03T12:45:00.000Z",
   "services": {
-    "api": "ok"
+    "api": "ok",
+    "database": "ok"
   }
 }
 ```
@@ -80,61 +81,42 @@ Health check endpoint for monitoring.
 
 ### Current Implementation
 
-The current implementation uses in-memory storage for demonstration purposes. This is suitable for testing and development but **not recommended for production**.
+The application uses **Neon Postgres** (serverless PostgreSQL) for production-ready data persistence. Neon is the recommended database solution for Vercel deployments.
 
-### Recommended Production Solutions
+### Database Schema
 
-#### Option 1: Vercel Postgres
-
-```javascript
-import { sql } from '@vercel/postgres';
-
-// Create table (run once)
-await sql`
-  CREATE TABLE IF NOT EXISTS subscribers (
-    id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    source TEXT,
-    ip_hash TEXT,
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    unsubscribed_at TIMESTAMP
-  );
-`;
-
-// Insert subscriber
-await sql`
-  INSERT INTO subscribers (email, source, ip_hash, user_agent)
-  VALUES (${email}, ${source}, ${ipHash}, ${userAgent})
-  ON CONFLICT (email) DO UPDATE SET
-    unsubscribed_at = NULL,
-    source = ${source}
-  WHERE subscribers.unsubscribed_at IS NOT NULL;
-`;
+```sql
+CREATE TABLE IF NOT EXISTS subscribers (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'landing_page',
+  ip_hash TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  unsubscribed_at TIMESTAMP
+);
 ```
 
-#### Option 2: Vercel KV
+### Setup Instructions
 
-```javascript
-import { kv } from '@vercel/kv';
+1. **Create a Neon Database**
+   - Visit [neon.tech](https://neon.tech) and sign up (free tier available)
+   - Create a new project
+   - Copy the connection string (starts with `postgresql://`)
 
-// Store subscriber
-await kv.set(`subscriber:${email}`, {
-  email,
-  source,
-  ipHash,
-  userAgent,
-  createdAt: new Date().toISOString(),
-  unsubscribedAt: null
-});
+2. **Initialize Database**
+   - Open the Neon SQL Editor
+   - Run the SQL script from `scripts/init-db.sql`
+   - This creates the `subscribers` table and indexes
 
-// Get subscriber
-const subscriber = await kv.get(`subscriber:${email}`);
-```
+3. **Configure Environment Variables**
+   - In Vercel dashboard, go to Settings > Environment Variables
+   - Add `DATABASE_URL` with your Neon connection string
+   - Optionally add `IP_SALT` for IP hashing
 
-#### Option 3: MongoDB Atlas, Supabase, or Other Services
-
-Any database service can be integrated by updating the `api/subscribe.js` file.
+4. **Deploy**
+   - Push your code to trigger deployment
+   - Vercel will automatically use the environment variables
 
 ## Implementation Details
 
@@ -153,23 +135,25 @@ The Newsletter component handles the entire subscription flow:
 
 The subscription function handles:
 
+- **Database Integration**: Uses Neon Postgres with parameterized queries
 - **Input Validation**: Server-side email format validation
-- **Duplicate Detection**: Prevents double subscriptions
+- **Duplicate Detection**: Database-level unique constraint on email
 - **Re-subscription**: Allows previously unsubscribed users to re-subscribe
 - **Privacy**: Hashes IP addresses for analytics without storing raw IPs
-- **Error Handling**: Graceful handling of errors
+- **Error Handling**: Graceful handling of database and validation errors
 - **CORS Support**: Enables cross-origin requests
 
 ## Features
 
 1. **Global Distribution**: Vercel's edge network for fast response times
 2. **Low Latency**: Functions run close to users
-3. **Persistence**: Ready for database integration
-4. **Duplicate Prevention**: Application-level uniqueness check
+3. **Production-Ready Database**: Neon Postgres for reliable data persistence
+4. **Duplicate Prevention**: Database-level unique constraint
 5. **Re-subscription Support**: Users can re-subscribe after unsubscribing
 6. **Error Handling**: Clear error messages for network and API failures
 7. **Privacy**: IP hashing for analytics without raw IP storage
-8. **Scalability**: Handles traffic with Vercel's serverless infrastructure
+8. **Scalability**: Serverless architecture handles traffic automatically
+9. **Connection Pooling**: Neon provides automatic connection management
 
 ## Privacy Considerations
 
@@ -182,38 +166,55 @@ The subscription function handles:
 
 ### Local Development
 
-For local development:
+For local development with database access:
 
 ```bash
 # Install dependencies
 npm install
 
-# Start the development server
-npm run dev
-```
+# Set up environment variables (create .env.local)
+# DATABASE_URL=your_neon_connection_string
 
-The Vite dev server runs at `http://localhost:5173/`. Note that API calls will fail in local development unless you set up Vercel CLI for local testing:
-
-```bash
-# Install Vercel CLI
+# Start the development server with Vercel CLI
 npm install -g vercel
-
-# Run with Vercel CLI (links functions and frontend)
 vercel dev
 ```
 
+The Vercel CLI runs at `http://localhost:3000/` with full API and database support.
+
+For frontend-only development (API calls will fail):
+```bash
+npm run dev
+```
+
+The Vite dev server runs at `http://localhost:5173/`.
+
 ### Production Deployment
 
-#### Deploy to Vercel
+#### Step 1: Set Up Neon Database
+
+1. Create account at [neon.tech](https://neon.tech)
+2. Create a new project
+3. Copy the connection string
+4. Run the initialization script (`scripts/init-db.sql`) in Neon SQL Editor
+
+#### Step 2: Deploy to Vercel
 
 1. Push your code to GitHub
 2. Import the project in [Vercel](https://vercel.com)
-3. Vercel will automatically detect the configuration
+3. Add environment variables:
+   - `DATABASE_URL`: Your Neon connection string
+   - `IP_SALT`: Random string for IP hashing (optional)
 4. Click "Deploy"
 
 Alternatively, use the Vercel CLI:
 
 ```bash
+# Set environment variables
+vercel env add DATABASE_URL
+vercel env add IP_SALT
+
+# Deploy
 vercel --prod
 ```
 
@@ -223,8 +224,13 @@ Set these in the Vercel dashboard (Settings > Environment Variables):
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| IP_SALT | Salt for IP address hashing | Optional |
-| DATABASE_URL | Database connection string (if using Postgres) | For production |
+| `DATABASE_URL` | Neon Postgres connection string | **Yes** |
+| `IP_SALT` | Salt for IP address hashing | Optional |
+
+**Note**: The `DATABASE_URL` should be in this format:
+```
+postgresql://[user]:[password]@[host]/[database]?sslmode=require
+```
 
 ## Monitoring
 
@@ -236,38 +242,45 @@ Monitor the `/api/health` endpoint to ensure the service is operational:
 curl https://your-domain.vercel.app/api/health
 ```
 
-### Vercel Dashboard
+The health check verifies both API and database connectivity.
 
-Use the Vercel dashboard to monitor:
-- Function invocations
-- Response times
-- Error rates
-- Bandwidth usage
+### Database Management
+
+Access your Neon database console to:
+- View subscriber data
+- Run analytics queries
+- Export subscriber lists
+- Monitor database performance
+
+Example queries:
+
+```sql
+-- Count total subscribers
+SELECT COUNT(*) FROM subscribers WHERE unsubscribed_at IS NULL;
+
+-- List recent subscribers
+SELECT email, source, created_at
+FROM subscribers
+WHERE unsubscribed_at IS NULL
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Get subscribers by source
+SELECT source, COUNT(*) as count
+FROM subscribers
+WHERE unsubscribed_at IS NULL
+GROUP BY source;
+```
 
 ## Security Considerations
 
 - **Input Validation**: Server-side validation prevents malformed data
-- **SQL Injection**: Use parameterized queries (when database is integrated)
-- **Rate Limiting**: Vercel provides built-in protection
+- **SQL Injection**: Parameterized queries prevent injection attacks (using Neon's tagged template literals)
+- **Rate Limiting**: Vercel provides built-in DDoS protection
 - **HTTPS Only**: All traffic encrypted in transit
 - **XSS Protection**: React automatically escapes user input
-- **CORS Configuration**: Properly configured in serverless functions
-
-## Upgrading to Production Database
-
-To upgrade from in-memory storage to a production database:
-
-1. Choose your database solution (Vercel Postgres, KV, etc.)
-2. Install required packages:
-   ```bash
-   npm install @vercel/postgres
-   # or
-   npm install @vercel/kv
-   ```
-3. Update `api/subscribe.js` to use the database client
-4. Set database environment variables in Vercel
-5. Test locally with `vercel dev`
-6. Deploy to production
+- **Database Security**: Neon provides SSL connections and automatic backups
+- **Unique Constraints**: Database-level duplicate prevention
 
 ## Future Enhancements
 
@@ -275,6 +288,6 @@ To upgrade from in-memory storage to a production database:
 2. **Unsubscribe API**: Add `/api/unsubscribe` endpoint
 3. **Admin Dashboard**: View and manage subscribers
 4. **Notification Delivery**: Integrate with email service (SendGrid, Resend, etc.)
-5. **Analytics**: Track subscription sources and engagement
+5. **Analytics**: Enhanced tracking of subscription sources and engagement
 6. **Webhooks**: Notify external systems of new subscriptions
-7. **Database Persistence**: Integrate Vercel Postgres or KV for production
+7. **Backup Strategy**: Implement additional backup procedures beyond Neon's automatic backups

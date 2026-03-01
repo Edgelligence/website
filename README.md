@@ -110,16 +110,25 @@ npm install -g vercel
 vercel
 ```
 
+### Database Setup
+
+This project uses Neon Postgres (serverless) for data persistence. Set up your database:
+
+1. Create a Neon database at [neon.tech](https://neon.tech) (free tier available)
+2. Copy your connection string
+3. In Vercel dashboard, add environment variable:
+   - `DATABASE_URL`: Your Neon Postgres connection string
+
+4. Initialize the database by running the SQL script in `scripts/init-db.sql` in your Neon console
+
 ### Environment Variables
 
-For production, you may want to set the following environment variables in Vercel:
+Set these environment variables in the Vercel dashboard (Settings > Environment Variables):
 
-- `IP_SALT`: Salt for IP address hashing (optional, for privacy-preserving analytics)
-
-Note: The current implementation uses in-memory storage for demo purposes. For production, consider integrating with:
-- Vercel Postgres
-- Vercel KV
-- Any other database service
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | Neon Postgres connection string | **Yes** |
+| `IP_SALT` | Salt for IP address hashing | Optional |
 
 ## License
 

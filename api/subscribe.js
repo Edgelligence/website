@@ -2,8 +2,10 @@
  * Subscribe API - Vercel Serverless Function
  *
  * Handles email subscription requests for the "Notify Me" feature.
- * Uses Vercel KV or Postgres for persistent storage.
+ * Uses Neon Postgres (serverless) for persistent storage.
  */
+
+import { neon } from '@neondatabase/serverless';
 
 // Email validation regex - simplified pattern that accepts most valid emails
 // while being permissive enough for edge cases. Server-side validation is a
@@ -57,10 +59,14 @@ function jsonResponse(res, data, status = 200) {
 }
 
 /**
- * Simple in-memory storage (for demo purposes)
- * In production, replace with Vercel Postgres, KV, or another database
+ * Get database connection
  */
-const subscribers = new Map();
+function getDB() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+  return neon(process.env.DATABASE_URL);
+}
 
 /**
  * Handle POST /api/subscribe
@@ -113,51 +119,74 @@ export default async function handler(req, res) {
   const ipHash = await hashIP(clientIP, process.env.IP_SALT);
 
   try {
-    // Check if already subscribed
-    const existing = subscribers.get(email);
+    // Check if DATABASE_URL is configured
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL not configured');
+      return jsonResponse(res, {
+        success: false,
+        error: 'Service temporarily unavailable'
+      }, 503);
+    }
 
-    if (existing && !existing.unsubscribed_at) {
+    const sql = getDB();
+
+    // Check if subscriber already exists
+    const existingResult = await sql`
+      SELECT email, unsubscribed_at
+      FROM subscribers
+      WHERE LOWER(email) = LOWER(${email})
+      LIMIT 1
+    `;
+
+    if (existingResult.length > 0) {
+      const existing = existingResult[0];
+
+      if (!existing.unsubscribed_at) {
+        // Already subscribed and active
+        return jsonResponse(res, {
+          success: false,
+          error: 'Already subscribed'
+        }, 409);
+      }
+
+      // Re-subscribe: update existing record
+      await sql`
+        UPDATE subscribers
+        SET unsubscribed_at = NULL,
+            source = ${source},
+            ip_hash = ${ipHash},
+            user_agent = ${userAgent}
+        WHERE LOWER(email) = LOWER(${email})
+      `;
+
+      return jsonResponse(res, {
+        success: true,
+        message: 'Welcome back! You\'ve been re-subscribed.'
+      });
+    }
+
+    // New subscriber: insert new record
+    await sql`
+      INSERT INTO subscribers (email, source, ip_hash, user_agent)
+      VALUES (${email}, ${source}, ${ipHash}, ${userAgent})
+    `;
+
+    return jsonResponse(res, {
+      success: true,
+      message: 'You\'re on the list!'
+    }, 201);
+
+  } catch (error) {
+    console.error('Subscription error:', error);
+
+    // Check if it's a duplicate key error (race condition)
+    if (error.message && error.message.includes('unique constraint')) {
       return jsonResponse(res, {
         success: false,
         error: 'Already subscribed'
       }, 409);
     }
 
-    // Add or update subscription
-    const now = new Date().toISOString();
-    if (existing && existing.unsubscribed_at) {
-      // Re-subscribe
-      subscribers.set(email, {
-        email,
-        source,
-        ip_hash: ipHash,
-        user_agent: userAgent,
-        created_at: existing.created_at,
-        unsubscribed_at: null,
-        updated_at: now
-      });
-      return jsonResponse(res, {
-        success: true,
-        message: 'Welcome back! You\'ve been re-subscribed.'
-      });
-    } else {
-      // New subscription
-      subscribers.set(email, {
-        email,
-        source,
-        ip_hash: ipHash,
-        user_agent: userAgent,
-        created_at: now,
-        unsubscribed_at: null
-      });
-      return jsonResponse(res, {
-        success: true,
-        message: 'You\'re on the list!'
-      }, 201);
-    }
-
-  } catch (error) {
-    console.error('Subscription error:', error);
     return jsonResponse(res, {
       success: false,
       error: 'Unable to process subscription. Please try again.'
