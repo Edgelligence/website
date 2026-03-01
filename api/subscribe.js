@@ -6,6 +6,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import crypto from 'crypto';
 
 // Email validation regex - simplified pattern that accepts most valid emails
 // while being permissive enough for edge cases. Server-side validation is a
@@ -20,7 +21,6 @@ const MAX_SOURCE_LENGTH = 50;
  */
 async function hashIP(ip, salt) {
   if (!ip) return null;
-  const crypto = require('crypto');
   const hash = crypto.createHash('sha256');
   hash.update(ip + (salt || ''));
   return hash.digest('hex').slice(0, 16);
