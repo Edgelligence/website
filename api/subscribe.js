@@ -62,10 +62,10 @@ function jsonResponse(res, data, status = 200) {
  * Get database connection
  */
 function getDB() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is not set');
+  if (!process.env.edgelligence_DATABASE_URL) {
+    throw new Error('edgelligence_DATABASE_URL environment variable is not set');
   }
-  return neon(process.env.DATABASE_URL);
+  return neon(process.env.edgelligence_DATABASE_URL);
 }
 
 /**
@@ -119,9 +119,9 @@ export default async function handler(req, res) {
   const ipHash = await hashIP(clientIP, process.env.IP_SALT);
 
   try {
-    // Check if DATABASE_URL is configured
-    if (!process.env.DATABASE_URL) {
-      console.error('DATABASE_URL not configured');
+    // Check if edgelligence_DATABASE_URL is configured
+    if (!process.env.edgelligence_DATABASE_URL) {
+      console.error('edgelligence_DATABASE_URL not configured');
       return jsonResponse(res, {
         success: false,
         error: 'Service temporarily unavailable'

@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS subscribers (
 
 3. **Configure Environment Variables**
    - In Vercel dashboard, go to Settings > Environment Variables
-   - Add `DATABASE_URL` with your Neon connection string
+   - Add `edgelligence_DATABASE_URL` with your Neon connection string
    - Optionally add `IP_SALT` for IP hashing
 
 4. **Deploy**
@@ -173,7 +173,7 @@ For local development with database access:
 npm install
 
 # Set up environment variables (create .env.local)
-# DATABASE_URL=your_neon_connection_string
+# edgelligence_DATABASE_URL=your_neon_connection_string
 
 # Start the development server with Vercel CLI
 npm install -g vercel
@@ -203,7 +203,7 @@ The Vite dev server runs at `http://localhost:5173/`.
 1. Push your code to GitHub
 2. Import the project in [Vercel](https://vercel.com)
 3. Add environment variables:
-   - `DATABASE_URL`: Your Neon connection string
+   - `edgelligence_DATABASE_URL`: Your Neon connection string
    - `IP_SALT`: Random string for IP hashing (optional)
 4. Click "Deploy"
 
@@ -211,7 +211,7 @@ Alternatively, use the Vercel CLI:
 
 ```bash
 # Set environment variables
-vercel env add DATABASE_URL
+vercel env add edgelligence_DATABASE_URL
 vercel env add IP_SALT
 
 # Deploy
@@ -224,10 +224,10 @@ Set these in the Vercel dashboard (Settings > Environment Variables):
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | Neon Postgres connection string | **Yes** |
+| `edgelligence_DATABASE_URL` | Neon Postgres connection string | **Yes** |
 | `IP_SALT` | Salt for IP address hashing | Optional |
 
-**Note**: The `DATABASE_URL` should be in this format:
+**Note**: The `edgelligence_DATABASE_URL` should be in this format:
 ```
 postgresql://[user]:[password]@[host]/[database]?sslmode=require
 ```
