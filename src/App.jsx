@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Hero from './components/Hero';
 import Newsletter from './components/Newsletter';
 import Footer from './components/Footer';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         </main>
         <Footer />
       </div>
+      <SpeedInsights />
     </ThemeProvider>
   );
 }
