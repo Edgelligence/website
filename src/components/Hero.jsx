@@ -17,7 +17,7 @@ function Hero() {
       </h1>
       
       <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-4 sm:mb-6">
-        AI for and on the network periphery—pioneering the future of distributed, edge-native intelligence.
+        AI for and on the network periphery—pioneering the future of edge intelligence.
       </p>
       
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center text-sm text-slate-500 dark:text-slate-500">
